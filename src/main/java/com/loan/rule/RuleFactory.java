@@ -23,10 +23,10 @@ public class RuleFactory {
 
             // Otherwise, create based on rule type
             return switch (rule.getRuleType()) {
-                case SCRIPT -> new ScriptRule(rule);
-                case API -> new ApiRule(rule);
-                case DATABASE -> new DatabaseRule(rule, jdbcTemplate);
-                case COMPOSITE -> new CompositeRule(rule, ruleRepository, this);
+                case "SCRIPT" -> new ScriptRule(rule);
+                case "API" -> new ApiRule(rule);
+                case "DATABASE" -> new DatabaseRule(rule, jdbcTemplate);
+                case "COMPOSITE" -> new CompositeRule(rule, ruleRepository, this);
                 default -> throw new IllegalArgumentException("Unsupported rule type: " + rule.getRuleType());
             };
         } catch (Exception e) {
@@ -43,14 +43,18 @@ public class RuleFactory {
             throw new IllegalArgumentException("Rule class must extend BaseRule");
         }
 
+        BaseRule ruleInstance;
         // Handle special cases for rule types that need additional dependencies
         if (DatabaseRule.class.isAssignableFrom(clazz)) {
-            return new DatabaseRule(rule, jdbcTemplate);
+            ruleInstance = new DatabaseRule(rule, jdbcTemplate);
         } else if (CompositeRule.class.isAssignableFrom(clazz)) {
-            return new CompositeRule(rule, ruleRepository, this);
+            ruleInstance = new CompositeRule(rule, ruleRepository, this);
+        } else {
+            // For other rule types, use default constructor
+            ruleInstance = (BaseRule) clazz.getConstructor().newInstance();
+            ruleInstance.setRule(rule);
         }
 
-        // For other rule types, use default constructor
-        return (BaseRule) clazz.getConstructor(Rule.class).newInstance(rule);
+        return ruleInstance;
     }
 } 

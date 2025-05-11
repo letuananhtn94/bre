@@ -8,21 +8,20 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationContext;
 import org.springframework.stereotype.Component;
 
-import javax.annotation.PostConstruct;
 import java.util.HashMap;
 import java.util.Map;
 
 @Slf4j
 @Component
-public class RuleClassValidator {
+public class RuleClassValidator implements org.springframework.beans.factory.InitializingBean {
     
     @Autowired
     private ApplicationContext applicationContext;
     
     private final Map<String, Class<? extends BaseRule>> ruleClasses = new HashMap<>();
     
-    @PostConstruct
-    public void init() {
+    @Override
+    public void afterPropertiesSet() {
         // Tìm tất cả các bean là BaseRule
         Map<String, BaseRule> ruleBeans = applicationContext.getBeansOfType(BaseRule.class);
         

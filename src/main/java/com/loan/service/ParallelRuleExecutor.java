@@ -1,5 +1,6 @@
 package com.loan.service;
 
+import com.loan.domain.ExecutionStatus;
 import com.loan.domain.Rule;
 import com.loan.model.RuleResult;
 import com.loan.rule.BaseRule;
@@ -61,7 +62,7 @@ public class ParallelRuleExecutor {
                 } catch (Exception e) {
                     log.error("Error getting result for rule {}: {}", ruleName, e.getMessage());
                     results.put(ruleName, RuleResult.builder()
-                        .status(RuleResult.Status.ERROR)
+                        .status(ExecutionStatus.ERROR)
                         .errorMessage("Error executing rule: " + e.getMessage())
                         .build());
                 }
@@ -107,7 +108,7 @@ public class ParallelRuleExecutor {
         if (ruleClassAnnotation.dependsOn().length > 0) {
             for (String dependency : ruleClassAnnotation.dependsOn()) {
                 RuleResult dependencyResult = results.get(dependency);
-                if (dependencyResult != null && dependencyResult.getStatus() == RuleResult.Status.SUCCESS) {
+                if (dependencyResult != null && dependencyResult.getStatus() == ExecutionStatus.SUCCESS) {
                     ruleInput.put(dependency, dependencyResult.getResult());
                 }
             }
@@ -124,22 +125,22 @@ public class ParallelRuleExecutor {
                         return executeFallback(ruleBean, rule, ruleInput, ruleExecutionAnnotation.fallbackMethod());
                     }
                     return RuleResult.builder()
-                        .status(RuleResult.Status.ERROR)
+                        .status(ExecutionStatus.ERROR)
                         .errorMessage("Circuit breaker is open")
                         .build();
                 }
 
                 // Thực thi rule với retry
-                RuleResult result = executeWithRetry(ruleBean, rule, ruleInput, ruleExecutionAnnotation);
+                RuleResult result = executeWithRetry(ruleBean, ruleInput, ruleExecutionAnnotation);
                 
                 // Cập nhật circuit breaker
-                circuitBreaker.recordResult(result.getStatus() == RuleResult.Status.SUCCESS);
+                circuitBreaker.recordResult(result.getStatus() == ExecutionStatus.SUCCESS);
                 
                 return result;
             } catch (Exception e) {
                 log.error("Error executing rule {}: {}", rule.getName(), e.getMessage());
                 return RuleResult.builder()
-                    .status(RuleResult.Status.ERROR)
+                    .status(ExecutionStatus.ERROR)
                     .errorMessage("Error executing rule: " + e.getMessage())
                     .build();
             }
@@ -148,24 +149,23 @@ public class ParallelRuleExecutor {
         ruleFutures.put(rule.getName(), future);
     }
 
-    private RuleResult executeWithRetry(BaseRule ruleBean, Rule rule, 
-                                      Map<String, Object> input,
-                                      RuleExecution annotation) {
+    private RuleResult executeWithRetry(BaseRule ruleBean, Map<String, Object> input, RuleExecution annotation) {
         if (annotation == null || annotation.maxRetries() == 0) {
-            return ruleBean.execute(rule, input);
+            return ruleBean.execute(input);
         }
 
         int attempts = 0;
+        Exception lastException = null;
         while (attempts <= annotation.maxRetries()) {
             try {
-                return ruleBean.execute(rule, input);
+                return ruleBean.execute(input);
             } catch (Exception e) {
                 attempts++;
+                lastException = e;
                 if (attempts > annotation.maxRetries()) {
                     throw e;
                 }
-                log.warn("Retry attempt {} for rule {}: {}", 
-                    attempts, rule.getName(), e.getMessage());
+                log.warn("Retry attempt {} for ruleBean {}: {}", attempts, ruleBean.getClass().getSimpleName(), e.getMessage());
                 try {
                     Thread.sleep(annotation.retryDelay());
                 } catch (InterruptedException ie) {
@@ -174,7 +174,7 @@ public class ParallelRuleExecutor {
                 }
             }
         }
-        throw new RuntimeException("Max retry attempts exceeded");
+        throw new RuntimeException("Max retry attempts exceeded", lastException);
     }
 
     private RuleResult executeFallback(BaseRule ruleBean, Rule rule,
@@ -188,7 +188,7 @@ public class ParallelRuleExecutor {
             log.error("Error executing fallback for rule {}: {}", 
                 rule.getName(), e.getMessage());
             return RuleResult.builder()
-                .status(RuleResult.Status.ERROR)
+                .status(ExecutionStatus.ERROR)
                 .errorMessage("Error in fallback: " + e.getMessage())
                 .build();
         }

@@ -30,8 +30,7 @@ public class Rule {
     private String workflowStep;
 
     @Column(name = "rule_type", nullable = false)
-    @Enumerated(EnumType.STRING)
-    private RuleType ruleType;
+    private String ruleType;
 
     @Column(name = "rule_class", nullable = false)
     private String ruleClass;
@@ -59,4 +58,10 @@ public class Rule {
 
     @Column(name = "retry_delay_ms")
     private Long retryDelayMs;
+
+    @Column(name = "priority")
+    private int priority;
+
+    @Column(name = "parameters")
+    private String parameters;
 } 

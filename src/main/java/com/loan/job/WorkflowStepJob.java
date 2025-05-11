@@ -26,11 +26,11 @@ public class WorkflowStepJob implements Job {
         try {
             log.info("Executing scheduled workflow step: {} for product: {}", stepCode, productCode);
             
-            Map<String, Object> context = new HashMap<>();
-            context.put("requestId", "SCHEDULED-" + System.currentTimeMillis());
-            context.put("source", "SCHEDULER");
+            Map<String, Object> jobContext = new HashMap<>();
+            jobContext.put("requestId", "SCHEDULED-" + System.currentTimeMillis());
+            jobContext.put("source", "SCHEDULER");
 
-            workflowService.executeWorkflowStep(productCode, stepCode, context);
+            workflowService.executeWorkflowStep(productCode, stepCode, jobContext);
             
             log.info("Completed scheduled workflow step: {} for product: {}", stepCode, productCode);
         } catch (Exception e) {

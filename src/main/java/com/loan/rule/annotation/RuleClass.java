@@ -8,6 +8,7 @@ import java.lang.annotation.Target;
 @Target(ElementType.TYPE)
 @Retention(RetentionPolicy.RUNTIME)
 public @interface RuleClass {
+    String name();
     String description() default "";
     String productCode() default "";
     boolean parallel() default true;

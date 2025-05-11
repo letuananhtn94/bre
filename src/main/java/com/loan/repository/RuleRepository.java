@@ -9,12 +9,12 @@ import java.util.List;
 
 @Repository
 public interface RuleRepository extends JpaRepository<Rule, Long> {
-    List<Rule> findByProductCodeAndWorkflowStepAndIsActiveTrueOrderByExecutionOrderAsc(
+    List<Rule> findByProductCodeAndWorkflowStepAndActiveTrueOrderByExecutionOrderAsc(
         String productCode, String workflowStep);
 
     @Query("SELECT r FROM Rule r WHERE r.productCode = :productCode " +
            "AND r.workflowStep = :workflowStep " +
-           "AND r.isActive = true " +
+           "AND r.active = true " +
            "ORDER BY r.executionOrder ASC")
     List<Rule> findActiveRulesForWorkflowStep(
         @Param("productCode") String productCode,

@@ -1,8 +1,11 @@
 package com.loan.domain;
 
 public enum ExecutionStatus {
+    PENDING,
+    RUNNING,
     SUCCESS,
-    FAILURE,
     ERROR,
-    SKIPPED
+    TIMEOUT,
+    RETRYING,
+    FAILED
 } 

@@ -15,9 +15,12 @@ public class LoanApprovalResult {
     private String requestId;
     private String productCode;
     private String workflowStep;
-    private boolean approved;
+    private String status;
+    private String errorMessage;
+    private Object data;
     private Map<String, Object> resultData;
     private List<RuleResult> ruleResults;
-    private String errorMessage;
     private Long timestamp;
+    @Builder.Default
+    private boolean approved = false;
 } 

@@ -3,15 +3,15 @@ spring:
     name: loan-approval-service
   
   datasource:
-    url: jdbc:oracle:thin:@localhost:1521:XE
-    username: ${DB_USERNAME:system}
-    password: ${DB_PASSWORD:oracle}
-    driver-class-name: oracle.jdbc.OracleDriver
+    url: jdbc:mysql://localhost:3306/bre
+    username: root
+    password: P@ssword
+    driver-class-name: com.mysql.cj.jdbc.Driver
   
   jpa:
-    database-platform: org.hibernate.dialect.OracleDialect
+    database-platform: org.hibernate.dialect.MySQLDialect
     hibernate:
-      ddl-auto: validate
+      ddl-auto: update
     show-sql: true
     properties:
       hibernate:
@@ -36,16 +36,22 @@ spring:
 
   quartz:
     job-store-type: jdbc
+    datasource:
+      initialize-schema: always
     properties:
-      org.quartz.jobStore.isClustered: true
-      org.quartz.jobStore.useProperties: false
-      org.quartz.jobStore.driverDelegateClass: org.quartz.impl.jdbcjobstore.oracle.OracleDelegate
-      org.quartz.jobStore.tablePrefix: QRTZ_
-      org.quartz.jobStore.dataSource: quartzDataSource
-      org.quartz.dataSource.quartzDataSource.driver: oracle.jdbc.OracleDriver
-      org.quartz.dataSource.quartzDataSource.URL: ${spring.datasource.url}
-      org.quartz.dataSource.quartzDataSource.user: ${spring.datasource.username}
-      org.quartz.dataSource.quartzDataSource.password: ${spring.datasource.password}
+      org:
+        quartz:
+          scheduler:
+            instanceName: LoanApprovalQuartzScheduler
+          jobStore:
+            class: org.springframework.scheduling.quartz.LocalDataSourceJobStore
+            driverDelegateClass: org.quartz.impl.jdbcjobstore.StdJDBCDelegate
+            tablePrefix: QRTZ_
+            isClustered: true
+          threadPool:
+            class: org.quartz.simpl.SimpleThreadPool
+            threadCount: 10
+            threadPriority: 5
 
 server:
   port: ${SERVER_PORT:8080}

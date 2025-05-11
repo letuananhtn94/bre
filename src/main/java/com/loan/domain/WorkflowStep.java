@@ -49,4 +49,15 @@ public class WorkflowStep {
 
     @Column(name = "description")
     private String description;
+
+    @Column(name = "parallel_execution", nullable = false)
+    private boolean parallelExecution = false;
+
+    public boolean isParallelExecution() {
+        return parallelExecution;
+    }
+
+    public void setParallelExecution(boolean parallelExecution) {
+        this.parallelExecution = parallelExecution;
+    }
 } 

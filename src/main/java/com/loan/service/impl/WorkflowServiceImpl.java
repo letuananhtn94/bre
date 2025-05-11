@@ -3,11 +3,13 @@ package com.loan.service.impl;
 import com.loan.domain.Workflow;
 import com.loan.domain.WorkflowStep;
 import com.loan.domain.Rule;
+import com.loan.domain.ExecutionStatus;
 import com.loan.model.LoanApprovalResult;
 import com.loan.model.RuleResult;
 import com.loan.repository.WorkflowRepository;
 import com.loan.service.WorkflowService;
 import com.loan.service.RuleEngineService;
+import com.loan.service.ParallelRuleExecutor;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -26,6 +28,7 @@ public class WorkflowServiceImpl implements WorkflowService {
 
     private final WorkflowRepository workflowRepository;
     private final RuleEngineService ruleEngineService;
+    private final ParallelRuleExecutor parallelRuleExecutor;
 
     @Override
     @Transactional(readOnly = true)
@@ -42,6 +45,12 @@ public class WorkflowServiceImpl implements WorkflowService {
                 .build();
         }
 
+        // Execute rules in parallel if step is configured for parallel execution
+        if (step.isParallelExecution()) {
+            return executeRulesInParallel(step, context);
+        }
+
+        // Execute rules sequentially
         List<RuleResult> ruleResults = new ArrayList<>();
         boolean approved = true;
 
@@ -89,7 +98,56 @@ public class WorkflowServiceImpl implements WorkflowService {
             .orElse(null);
     }
 
-    @Override
+    private LoanApprovalResult executeRulesInParallel(WorkflowStep step, Map<String, Object> context) {
+        log.info("Executing rules in parallel for step: {}", step.getStepCode());
+
+        // Filter active rules
+        List<Rule> activeRules = step.getRules().stream()
+            .filter(Rule::isActive)
+            .toList();
+
+        if (activeRules.isEmpty()) {
+            return LoanApprovalResult.builder()
+                .requestId((String) context.get("requestId"))
+                .productCode(step.getWorkflow().getProductCode())
+                .workflowStep(step.getStepCode())
+                .approved(true)
+                .ruleResults(new ArrayList<>())
+                .timestamp(System.currentTimeMillis())
+                .build();
+        }
+
+        try {
+            // Execute rules in parallel
+            Map<String, RuleResult> results = parallelRuleExecutor.executeRules(activeRules, context);
+
+            // Convert results to list and check for errors
+            List<RuleResult> ruleResults = new ArrayList<>(results.values());
+            boolean approved = ruleResults.stream()
+                .noneMatch(result -> result.getStatus() == ExecutionStatus.ERROR);
+
+            return LoanApprovalResult.builder()
+                .requestId((String) context.get("requestId"))
+                .productCode(step.getWorkflow().getProductCode())
+                .workflowStep(step.getStepCode())
+                .approved(approved)
+                .ruleResults(ruleResults)
+                .timestamp(System.currentTimeMillis())
+                .build();
+
+        } catch (Exception e) {
+            log.error("Error executing rules in parallel for step: {}", step.getStepCode(), e);
+            return LoanApprovalResult.builder()
+                .requestId((String) context.get("requestId"))
+                .productCode(step.getWorkflow().getProductCode())
+                .workflowStep(step.getStepCode())
+                .approved(false)
+                .errorMessage("Error executing rules in parallel: " + e.getMessage())
+                .timestamp(System.currentTimeMillis())
+                .build();
+        }
+    }
+
     public void validateWorkflow(Workflow workflow) {
         if (workflow == null) {
             throw new IllegalArgumentException("Workflow cannot be null");

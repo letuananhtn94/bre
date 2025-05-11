@@ -39,13 +39,13 @@ public class RuleExecutionLog {
     @Enumerated(EnumType.STRING)
     private ExecutionStatus executionStatus;
 
-    @Column(name = "input_data", columnDefinition = "CLOB")
+    @Column(name = "input_data", columnDefinition = "TEXT")
     private String inputData;
 
-    @Column(name = "output_data", columnDefinition = "CLOB")
+    @Column(name = "output_data", columnDefinition = "TEXT")
     private String outputData;
 
-    @Column(name = "error_message", columnDefinition = "CLOB")
+    @Column(name = "error_message", columnDefinition = "TEXT")
     private String errorMessage;
 
     @Column(name = "execution_duration_ms")

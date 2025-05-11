@@ -84,4 +84,22 @@ public class RuleEngineServiceImpl implements RuleEngineService {
             log.error("Error logging rule execution: {}", rule.getName(), e);
         }
     }
+
+    @Override
+    public Object convertOutput(Object result, String outputType) {
+        // Simple passthrough for now, customize as needed
+        return result;
+    }
+
+    @Override
+    public boolean validateRuleInput(com.loan.domain.Rule rule, java.util.Map<String, Object> input) {
+        // Simple validation: always return true for now
+        return true;
+    }
+
+    @Override
+    public Object evaluateScript(String script, java.util.Map<String, Object> context) {
+        // Not implemented, return null or throw exception as needed
+        return null;
+    }
 } 
